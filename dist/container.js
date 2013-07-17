@@ -10,7 +10,6 @@ define("container",
     function Container(parent) {
       this.parent = parent;
       this.children = [];
-
       this.resolver = parent && parent.resolver || function() {};
       this.registry = new InheritingDict(parent && parent.registry);
       this.cache = new InheritingDict(parent && parent.cache);
@@ -718,4 +717,6 @@ define("container/inheriting_dict",
       }
     };
 
+
+    return InheritingDict;
   });
