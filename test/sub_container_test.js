@@ -1,75 +1,19 @@
 import "container" as Container;
-var passedOptions;
-
-var o_create = Object.create || (function(){
-  function F(){}
-
-  return function(o) {
-    if (arguments.length !== 1) {
-      throw new Error('Object.create implementation only accepts one parameter.');
-    }
-    F.prototype = o;
-    return new F();
-  };
-}());
 
 var guids = 0;
 
 function factory() {
-  var create = function(options) {
-    passedOptions = options;
-    return new this.prototype.constructor(options);
-  };
-
-  var extend = function(options) {
-    var Child = function(options) {
-      Klass.call(this, options);
-    };
-
-    var Parent = this;
-
-    Child.prototype = new Parent();
-    Child.prototype.constructor = Child;
-
-    setProperties(Child.prototype, options);
-
-    Child.create = create;
-    Child.extend = extend;
-    Child.reopen = extend;
-
-    return Child;
-  };
-
   var Klass = function(options) {
-    setProperties(this, options);
     this._guid = guids++;
   };
 
-  Klass.prototype.constructor = Klass;
   Klass.prototype.destroy = function() {
     this.isDestroyed = true;
   };
 
-  Klass.prototype.toString = function() {
-    return "<Factory:" + this._guid + ">";
-  };
-
-  Klass.create = create;
-  Klass.extend = extend;
-  Klass.reopen = extend;
-
   return Klass;
-
-
 }
 
-function setProperties(object, properties) {
-  for (var key in properties) {
-    if (properties.hasOwnProperty(key)) {
-      object[key] = properties[key];
-    }
-  }
-}
 
 var container;
 

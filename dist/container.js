@@ -1,6 +1,6 @@
 define("container",
-  ["container/inheriting_dict"],
-  function(InheritingDict) {
+  ["container/inheriting_dict","container/config"],
+  function(InheritingDict, config) {
     "use strict";
     /**
      A lightweight container that helps to assemble and decouple components.
@@ -19,6 +19,12 @@ define("container",
       this._options = new InheritingDict(parent && parent._options);
       this._typeOptions = new InheritingDict(parent && parent._typeOptions);
     }
+
+    function configure(name, value) {
+      config[name] = value;
+    }
+
+    Container.configure = configure;
 
     Container.prototype = {
 
@@ -470,7 +476,7 @@ define("container",
         this.children = [];
 
         eachDestroyable(this, function(item) {
-          item.destroy();
+          config.destroy(item);
         });
 
         delete this.parent;
@@ -561,7 +567,7 @@ define("container",
         injections = buildInjections(container, injections);
         injections._debugContainerKey = fullName;
 
-        injectedFactory = factory.extend(injections);
+        injectedFactory = config.extend(factory, injections);
 
         // injectedFactory.reopenClass({} /* TODO: classInjections */);
 
@@ -580,7 +586,7 @@ define("container",
       }
 
       if (factory) {
-        return factory.create();
+        return config.create(factory);
       }
     }
 
@@ -601,6 +607,93 @@ define("container",
 
 
     return Container;
+  });
+define("container/config",
+  ["container/extend","container/create","container/destroy"],
+  function(extend, create, destroy) {
+    "use strict";
+
+    var config = {
+      extend: extend,
+      create: create,
+      destroy: destroy
+    };
+
+
+    return config;
+  });
+define("container/create",
+  [],
+  function() {
+    "use strict";
+    var create = function(Klass, props) {
+      var obj = new Klass();
+      setProperties(obj, props);
+      return obj;
+    };
+
+    function setProperties(object, properties) {
+      properties = properties || {};
+      for (var key in properties) {
+        if (properties.hasOwnProperty(key)) {
+          object[key] = properties[key];
+        }
+      }
+    }
+
+
+    return create;
+  });
+define("container/destroy",
+  [],
+  function() {
+    "use strict";
+    var destroy = function(obj) {
+      if (typeof obj.destroy === 'function') {
+        obj.destroy.call(obj);
+      }
+    };
+
+
+    return destroy;
+  });
+define("container/extend",
+  [],
+  function() {
+    "use strict";
+    var extend = function(Klass, props) {
+      var Child = function() {
+        Klass.apply(this, arguments);
+      };
+
+      Child.prototype = new Klass();
+      Child.prototype.constructor = Child;
+
+      setProperties(Child.prototype, props);
+
+      copyClassProperties(Klass, Child);
+
+      return Child;
+    };
+
+    function setProperties(object, properties) {
+      for (var key in properties) {
+        if (properties.hasOwnProperty(key)) {
+          object[key] = properties[key];
+        }
+      }
+    }
+
+    function copyClassProperties(Klass, Child) {
+      for (var i in Klass) {
+        if (Klass.hasOwnProperty(i)) {
+          Child[i] = Klass[i];
+        }
+      }
+    }
+
+
+    return extend;
   });
 define("container/inheriting_dict",
   [],

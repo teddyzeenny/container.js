@@ -1,6 +1,5 @@
 import "container" as Container;
 
-var passedOptions;
 
 function setProperties(object, properties) {
   for (var key in properties) {
@@ -10,55 +9,17 @@ function setProperties(object, properties) {
   }
 }
 
-var o_create = Object.create || (function(){
-  function F(){}
-
-  return function(o) {
-    if (arguments.length !== 1) {
-      throw new Error('Object.create implementation only accepts one parameter.');
-    }
-    F.prototype = o;
-    return new F();
-  };
-}());
-
 module("Container");
 
 var guids = 0;
 
 function factory() {
 
-  var create = function(options) {
-    passedOptions = options;
-    return new this.prototype.constructor(options);
-  };
-
-
-  var extend = function (options) {
-    var Child = function(options) {
-      Klass.call(this, options);
-    };
-
-    var Parent = this;
-
-    Child.prototype = new Parent();
-    Child.prototype.constructor = Child;
-
-    setProperties(Child.prototype, options);
-
-    Child.create = create;
-    Child.extend = extend;
-    Child.reopen = extend;
-
-    return Child;
-  };
-
   var Klass = function(options) {
     setProperties(this, options);
     this._guid = guids++;
   };
 
-  Klass.prototype.constructor = Klass;
   Klass.prototype.destroy = function() {
     this.isDestroyed = true;
   };
@@ -67,12 +28,7 @@ function factory() {
     return "<Factory:" + this._guid + ">";
   };
 
-  Klass.create = create;
-  Klass.extend = extend;
-  Klass.reopen = extend;
-
   return Klass;
-
 }
 
 test("A registered factory returns the same instance each time", function() {
@@ -93,10 +49,10 @@ test("A registered factory is returned from lookupFactory", function() {
 
   container.register('controller:post', PostController);
 
-  var postControllerFactory = container.lookupFactory('controller:post');
+  var PostControllerFactory = container.lookupFactory('controller:post');
 
-  ok(postControllerFactory, 'factory is returned');
-  ok(postControllerFactory.create() instanceof  PostController, "The return of factory.create is an instance of PostController");
+  ok(PostControllerFactory, 'factory is returned');
+  ok(new PostControllerFactory() instanceof  PostController, "The return of factory.create is an instance of PostController");
 });
 
 test("A factory return from lookupFactory descendants have a container and debugkey", function(){
@@ -105,7 +61,8 @@ test("A factory return from lookupFactory descendants have a container and debug
   var instance;
 
   container.register('controller:post', PostController);
-  instance = container.lookupFactory('controller:post').create();
+  var Factory = container.lookupFactory('controller:post');
+  instance = new Factory();
 
   ok(instance.container, 'factory instance receives a container');
   equal(instance._debugContainerKey, 'controller:post', 'factory instance receives _debugContainerKey');
